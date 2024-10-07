@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * The main interface for exporting rocket chat data.
@@ -77,7 +76,7 @@ public interface RocketExporter {
      * @param maxMessageCount how many messages to export
      * @param exportFormat    selected output format
      * @return exported messages
-     * @throws IOException on issues during the REST call
+     * @throws IOException             on issues during the REST call
      * @throws TooManyRequestException if the server responds with 429, you need to throttle the requests
      */
     List<Message> exportPrivateGroupMessages(String roomName, String roomId,
@@ -94,7 +93,7 @@ public interface RocketExporter {
      * @param maxMessageCount how many messages to export
      * @param exportFormat    selected output format
      * @return exported messages
-     * @throws IOException on issues during the REST call
+     * @throws IOException             on issues during the REST call
      * @throws TooManyRequestException if the server responds with 429, you need to throttle the requests
      */
     List<Message> exportChannelMessages(String channelName, String channelId,
@@ -111,7 +110,7 @@ public interface RocketExporter {
      * @param maxMessageCount how many messages to export
      * @param exportFormat    selected output format
      * @return exported messages
-     * @throws IOException on issues during the REST call
+     * @throws IOException             on issues during the REST call
      * @throws TooManyRequestException if the server responds with 429, you need to throttle the requests
      */
     List<Message> exportDirectMessages(String dmName, String dmId,
@@ -230,13 +229,7 @@ public interface RocketExporter {
             checkAuthenticated();
             RocketChatDm channel = getService().getAllDirectMessages(authHeaders).execute().body();
             if (channel != null) {
-                return channel.getIms()
-                        .stream()
-                        .peek(dm -> dm.setGeneratedName(dm.getUsernames().stream()
-                            .filter(u -> !u.equals(userName))
-                            .findFirst()
-                            .orElse(userName))) // Fallback to the user's name if we have filtered out all names (conversations with themselves)
-                        .collect(Collectors.toList());
+                return new ArrayList<>(channel.getIms());
             } else {
                 return Collections.emptyList();
             }
@@ -283,21 +276,30 @@ public interface RocketExporter {
                 default:
                     throw new IllegalStateException();
             }
-
+            Response<RocketChatFileMessageWrapperDto> files = getService().getAllFileFromDirectMessages(authHeaders, id, maxMessageCount).execute();
             Map<Long, Message> normalizedMessages = new HashMap<>();
             RocketChatMessageWrapperDto messagesBody;
-
+            Map<Long, RocketChatFileMessage> rocketChatFileMessageMap = new HashMap<>();
+            for (RocketChatFileMessage file : files.body().files) {
+                Instant timestamp = Instant.parse(file.uploadedAt);
+                rocketChatFileMessageMap.put(timestamp.getEpochSecond(), file);
+            }
             if (response.code() == 200 && (messagesBody = response.body()) != null) {
                 for (RocketChatMessageWrapperDto.Message message : messagesBody.getMessages()) {
                     Instant timestamp = Instant.parse(message.getTs());
+                    Message nm = new Message(
+                            message.getMsg(),
+                            message.getU().getUsername(),
+                            contextName,
+                            timestamp
+                    );
+                    RocketChatFileMessage f = rocketChatFileMessageMap.getOrDefault(timestamp.getEpochSecond(), null);
+                    if (f != null) {
+                        nm.setFileMessage(f);
+                        nm.setMessage(String.format("name:%s desc:%s", f.name, f.description));
+                    }
 
-                    normalizedMessages.put(timestamp.toEpochMilli(),
-                            new Message(
-                                    message.getMsg(),
-                                    message.getU().getName(),
-                                    contextName,
-                                    timestamp
-                            ));
+                    normalizedMessages.put(timestamp.toEpochMilli(), nm);
                 }
             } else if (response.code() == 429) {
                 throw new TooManyRequestException(response.body());
@@ -310,7 +312,7 @@ public interface RocketExporter {
 
             exportFormat.export(
                     normalizedMessagesList,
-                    new FileOutputStream(out));
+                    new FileOutputStream(out), out, authHeaders);
 
             return normalizedMessagesList;
         }

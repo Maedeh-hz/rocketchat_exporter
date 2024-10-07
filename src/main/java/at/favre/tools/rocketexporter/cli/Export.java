@@ -41,7 +41,7 @@ class Export implements Runnable {
     private boolean debug;
 
     @CommandLine.Option(names = {"-m", "--maxMsg"}, description = "How many messages should be exported.")
-    private int maxMessages = 25000;
+    private int maxMessages = 50000;
 
     public static void main(String[] args) {
         int exitCode = new CommandLine(new Export())
@@ -134,7 +134,7 @@ class Export implements Runnable {
             if (selection == 0) {
                 toExport.addAll(allConversations);
             } else {
-                toExport.add(allConversations.get(selection));
+                toExport.add(allConversations.get(selection-1));
             }
 
             for (int i = 0; i < toExport.size(); i++) {

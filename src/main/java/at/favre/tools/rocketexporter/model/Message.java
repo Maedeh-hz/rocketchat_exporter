@@ -1,16 +1,26 @@
 package at.favre.tools.rocketexporter.model;
 
-import lombok.AllArgsConstructor;
+import at.favre.tools.rocketexporter.dto.RocketChatFileMessage;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
 
 @Data
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class Message {
-    private final String message;
-    private final String username;
-    private final String channel;
-    private final Instant timestamp;
+    private  String message;
+    private  String username;
+    private  String channel;
+    private  Instant timestamp;
+
+    public Message(String message, String username, String channel, Instant timestamp) {
+        this.message = message;
+        this.username = username;
+        this.channel = channel;
+        this.timestamp = timestamp;
+    }
+
+    private RocketChatFileMessage fileMessage;
 }
 

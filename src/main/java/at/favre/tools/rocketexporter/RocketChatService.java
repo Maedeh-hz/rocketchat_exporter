@@ -46,4 +46,7 @@ public interface RocketChatService {
 
     @GET("/api/v1/im.history")
     Call<RocketChatMessageWrapperDto> getAllMessagesFromDirectMessages(@HeaderMap Map<String, String> header, @Query("roomId") String dmId, @Query("offset") long offset, @Query("count") long count);
+
+    @GET("/api/v1/im.files")
+    Call<RocketChatFileMessageWrapperDto> getAllFileFromDirectMessages(@HeaderMap Map<String, String> header, @Query("roomId") String dmId, @Query("limit") long limit);
 }
