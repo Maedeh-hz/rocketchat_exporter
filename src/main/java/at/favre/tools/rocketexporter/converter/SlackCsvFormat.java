@@ -1,9 +1,11 @@
 package at.favre.tools.rocketexporter.converter;
 
 import at.favre.tools.rocketexporter.model.Message;
+import at.favre.tools.rocketexporter.util.DateUtil;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -47,11 +49,12 @@ public class SlackCsvFormat implements ExportFormat {
             writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
             for (Message normalizedMessage : messages) {
                 if (normalizedMessage.getFileMessage() != null) {
-                    normalizedMessage.getFileMessage().download(file.getParent(), headers);
+                    normalizedMessage.getFileMessage().download(file.getPath(), headers);
                 }
                 String message = normalizedMessage.getMessage();
+                String persianDate = DateUtil.toPersianDate(new Date(normalizedMessage.getTimestamp().toEpochMilli()), "yyyy-MM-dd HH:mm:ss");
                 message = message == null ? "" : message.replaceAll("\"", "\\\\\"");
-                writer.write("\"" + normalizedMessage.getTimestamp().getEpochSecond() + "\"," +
+                writer.write("\"" + persianDate + "\"," +
                         "\"" + normalizedMessage.getChannel() + "\"," +
                         "\"" + normalizedMessage.getUsername() + "\"," +
                         "\"" + message + "\"" +

@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -279,26 +281,19 @@ public interface RocketExporter {
             Response<RocketChatFileMessageWrapperDto> files = getService().getAllFileFromDirectMessages(authHeaders, id, maxMessageCount).execute();
             Map<Long, Message> normalizedMessages = new HashMap<>();
             RocketChatMessageWrapperDto messagesBody;
-            Map<Long, RocketChatFileMessage> rocketChatFileMessageMap = new HashMap<>();
-            for (RocketChatFileMessage file : files.body().files) {
-                Instant timestamp = Instant.parse(file.uploadedAt);
-                rocketChatFileMessageMap.put(timestamp.getEpochSecond(), file);
-            }
+
             if (response.code() == 200 && (messagesBody = response.body()) != null) {
                 for (RocketChatMessageWrapperDto.Message message : messagesBody.getMessages()) {
                     Instant timestamp = Instant.parse(message.getTs());
+                    if (message.getMsg() == null || message.getMsg().isEmpty()) {
+                        continue;
+                    }
                     Message nm = new Message(
                             message.getMsg(),
                             message.getU().getUsername(),
                             contextName,
                             timestamp
                     );
-                    RocketChatFileMessage f = rocketChatFileMessageMap.getOrDefault(timestamp.getEpochSecond(), null);
-                    if (f != null) {
-                        nm.setFileMessage(f);
-                        nm.setMessage(String.format("name:%s desc:%s", f.name, f.description));
-                    }
-
                     normalizedMessages.put(timestamp.toEpochMilli(), nm);
                 }
             } else if (response.code() == 429) {
@@ -306,13 +301,28 @@ public interface RocketExporter {
             } else {
                 throw new IllegalStateException("error response: " + response.code());
             }
-
+            assert files.body() != null;
+            for (RocketChatFileMessage file : files.body().files) {
+                Instant timestamp = Instant.parse(file.uploadedAt);
+                Message nm = new Message(
+                        String.format("name:%s desc:%s", file.name, file.description),
+                        file.user.getUsername(),
+                        contextName,
+                        timestamp
+                );
+                nm.setFileMessage(file);
+                normalizedMessages.put(timestamp.toEpochMilli(), nm);
+            }
             List<Message> normalizedMessagesList = new ArrayList<>(normalizedMessages.values());
             normalizedMessagesList.sort(Comparator.comparingLong(m -> m.getTimestamp().toEpochMilli()));
-
+            String filename = contextName + "_" + DateTimeFormatter
+                    .ofPattern("yyyyMMddHHmmss")
+                    .withZone(ZoneId.of("UTC"))
+                    .format(Instant.now()) + "." + "csv";
+            File f = new File(out,filename);
             exportFormat.export(
                     normalizedMessagesList,
-                    new FileOutputStream(out), out, authHeaders);
+                    new FileOutputStream(f), out, authHeaders);
 
             return normalizedMessagesList;
         }

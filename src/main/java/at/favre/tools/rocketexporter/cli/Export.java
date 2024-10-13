@@ -7,7 +7,6 @@ import at.favre.tools.rocketexporter.converter.ExportFormat;
 import at.favre.tools.rocketexporter.converter.SlackCsvFormat;
 import at.favre.tools.rocketexporter.dto.Conversation;
 import at.favre.tools.rocketexporter.dto.LoginDto;
-import at.favre.tools.rocketexporter.dto.LoginResponseDto;
 import at.favre.tools.rocketexporter.dto.TokenDto;
 import at.favre.tools.rocketexporter.model.Message;
 import picocli.CommandLine;
@@ -15,9 +14,6 @@ import picocli.CommandLine;
 import java.io.File;
 import java.io.PrintStream;
 import java.net.URL;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -74,11 +70,10 @@ class Export implements Runnable {
                             .httpDebugOutput(debug)
                             .build());
 
-            LoginResponseDto loginResponse;
             if (username != null && !username.isEmpty()) {
-                loginResponse = exporter.login(new LoginDto(username, password));
+                exporter.login(new LoginDto(username, password));
             } else {
-                loginResponse = exporter.tokenAuth(new TokenDto(userId, password));
+                exporter.tokenAuth(new TokenDto(userId, password));
             }
 
             out.println("Authentication successful (" + username + " or " + userId + ").");
@@ -118,7 +113,7 @@ class Export implements Runnable {
 
             conversationSelection.addAll(allConversations);
 
-            if (allConversations.size() == 0) {
+            if (allConversations.isEmpty()) {
                 out.println("Nothing found to export.");
                 return;
             }
@@ -134,7 +129,7 @@ class Export implements Runnable {
             if (selection == 0) {
                 toExport.addAll(allConversations);
             } else {
-                toExport.add(allConversations.get(selection-1));
+                toExport.add(allConversations.get(selection - 1));
             }
 
             for (int i = 0; i < toExport.size(); i++) {
@@ -181,15 +176,19 @@ class Export implements Runnable {
         if (!provided.exists()) {
             provided.mkdirs();
         }
-
-        if (provided.isDirectory()) {
-            String filename = type.name.replaceAll(" ", "-") + "_" + contextName + "_" + DateTimeFormatter
-                    .ofPattern("yyyyMMddHHmmss")
-                    .withZone(ZoneId.of("UTC"))
-                    .format(Instant.now()) + "." + format.fileExtension();
-            return new File(provided, filename);
-        } else {
-            return provided;
+        File out = new File(provided, contextName);
+        if (!out.exists()) {
+            out.mkdirs();
         }
+        return out;
+//        if (provided.isDirectory()) {
+//            String filename = type.name.replaceAll(" ", "-") + "_" + contextName + "_" + DateTimeFormatter
+//                    .ofPattern("yyyyMMddHHmmss")
+//                    .withZone(ZoneId.of("UTC"))
+//                    .format(Instant.now()) + "." + format.fileExtension();
+//            new File(provided, contextName);
+//        } else {
+//            return provided;
+//        }
     }
 }
