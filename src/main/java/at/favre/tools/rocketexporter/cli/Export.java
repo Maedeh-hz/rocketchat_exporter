@@ -9,13 +9,13 @@ import at.favre.tools.rocketexporter.dto.Conversation;
 import at.favre.tools.rocketexporter.dto.LoginDto;
 import at.favre.tools.rocketexporter.dto.TokenDto;
 import at.favre.tools.rocketexporter.model.Message;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import lombok.SneakyThrows;
 import picocli.CommandLine;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -60,17 +60,13 @@ class Export implements Runnable {
     public void run() {
         PrintStream out = System.out;
 
-        FileReader fileReader = new FileReader(configFile);
-        BufferedReader bufferedReader = new BufferedReader(fileReader);
-        host = bufferedReader.readLine();
-        userId = bufferedReader.readLine();
-        String password = bufferedReader.readLine();
-        file = new File(bufferedReader.readLine());
+        String password = readingFromConfig();
 
         System.out.println("host = " + host);
         System.out.println("userId = " + userId);
         System.out.println("password or token = " + password);
-        System.out.println("store dir = " + file.getAbsolutePath());
+        System.out.println("output dir = " + file.getAbsolutePath());
+        System.out.println();
         if (username == null && userId == null) {
             out.println("You have to use a username or a token user ID to continue.");
             System.exit(-1);
@@ -181,6 +177,26 @@ class Export implements Runnable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String readingFromConfig() throws IOException {
+        Gson gson = new GsonBuilder().create();
+        FileReader fileReader = new FileReader(configFile);
+        BufferedReader bufferedReader = new BufferedReader(fileReader);
+        JsonObject myConf = gson.fromJson(bufferedReader, JsonObject.class);
+//        String[] line1 = bufferedReader.readLine().split(";");
+//        String[] line2 = bufferedReader.readLine().split(";");
+//        String[] line3 = bufferedReader.readLine().split(";");
+//        String[] line4 = bufferedReader.readLine().split(";");
+
+        if (host == null)
+            host = myConf.get("host").getAsString();
+        if (userId == null)
+            userId = myConf.get("user_id").getAsString();
+        String password = myConf.get("token").getAsString();
+        if (file == null)
+            file = new File(myConf.get("output_dir").getAsString());
+        return password;
     }
 
     private File generateOutputFile(File provided, String contextName, RocketExporter.ConversationType type, ExportFormat format) {

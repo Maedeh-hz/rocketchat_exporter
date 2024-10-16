@@ -3,6 +3,7 @@ package at.favre.tools.rocketexporter.cli;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 import java.util.stream.IntStream;
 
@@ -33,7 +34,7 @@ class CliOptionChooser {
 
         IntStream
                 .range(0, options.size())
-                .forEach(i -> out.println(String.format("\t(%d) %s", i + 1, options.get(i))));
+                .forEach(i -> out.printf(Locale.ENGLISH, "\t(%d) %s%n", i + 1, options.get(i)));
 
         while (true) {
             Scanner scanner = new Scanner(inputStream);
