@@ -48,6 +48,8 @@ class Export implements Runnable {
     private int maxMessages = 50000;
 
     public static void main(String[] args) {
+//        String hello = "Hello:!@";
+//        System.out.println(hello.replaceAll("[^a-zA-Z0-9]", "-"));
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         System.out.println("Text in UTF-8");
         int exitCode = new CommandLine(new Export())
@@ -155,13 +157,13 @@ class Export implements Runnable {
                 try {
                     switch (type) {
                         case GROUP:
-                            messages = exporter.exportPrivateGroupMessages(selectedGroup.getName(), selectedGroup.get_id(), offset, maxMsg, outFile, format);
+                            messages = exporter.exportPrivateGroupMessages(directoryName, selectedGroup.get_id(), offset, maxMsg, outFile, format);
                             break;
                         case CHANNEL:
-                            messages = exporter.exportChannelMessages(selectedGroup.getName(), selectedGroup.get_id(), offset, maxMsg, outFile, format);
+                            messages = exporter.exportChannelMessages(directoryName, selectedGroup.get_id(), offset, maxMsg, outFile, format);
                             break;
                         case DIRECT_MESSAGES:
-                            messages = exporter.exportDirectMessages(selectedGroup.getName(), selectedGroup.get_id(), offset, maxMsg, outFile, format);
+                            messages = exporter.exportDirectMessages(directoryName, selectedGroup.get_id(), offset, maxMsg, outFile, format);
                             break;
                         default:
                             throw new IllegalStateException();
