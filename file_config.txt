@@ -1,0 +1,6 @@
+{
+   "host":"http://chat.peykasa.ir",
+   "user_id":"asdf",
+   "token":"MDkz",
+   "output_dir":"C:\\tmp\\OUT"
+}
