@@ -15,6 +15,8 @@ import java.util.List;
 public class RocketChatDm extends Pageable {
     private List<DirectMessage> ims;
 
+
+
     @Data
     public static class DirectMessage implements Conversation {
         private String _id;
